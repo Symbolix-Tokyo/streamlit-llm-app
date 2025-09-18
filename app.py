@@ -3,7 +3,6 @@ load_dotenv()
 
 import streamlit as st
 import os
-import sys
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
@@ -47,24 +46,15 @@ with st.sidebar:
         type="password",
         help="環境変数 OPENAI_API_KEY でも可",
     )
-    default_key = os.environ.get("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY", "")
-    # api_keyが空の場合のみdefault_keyを代入する
-    if not api_key and default_key:
-        api_key = default_key
-
-    # get_default_api_key関数が未定義なので追加
-    def get_default_api_key():
-        return os.environ.get("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY", "")
-    default_key = get_default_api_key()
-    if not api_key and default_key:
-        api_key = default_key
+    if not api_key:
+        api_key = os.environ.get("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY", "") if hasattr(st, "secrets") else ""
 
     model_name = st.selectbox(
         "モデル選択",
         options=[
-            "gpt-4o-mini",
             "gpt-4o",
-            "gpt-4.1-mini",
+            "gpt-4",
+            "gpt-3.5-turbo",
         ],
         index=0,
         help="LangChain(ChatOpenAI) 経由で呼び出します",
@@ -220,5 +210,14 @@ with st.expander("✍️ クイック入力例（コピペ用）"):
     )
 
 # langchain-openaiのインストール
-if "langchain-openai" not in sys.modules:
-    st.warning("必要なパッケージがインストールされていません。以下のコマンドを実行してください：\n`pip install langchain-openai`")
+import importlib.util
+missing_packages = []
+if importlib.util.find_spec("langchain_openai") is None:
+    missing_packages.append("langchain-openai")
+if importlib.util.find_spec("langchain_core") is None:
+    missing_packages.append("langchain-core")
+if missing_packages:
+    st.warning(
+        f"必要なパッケージがインストールされていません。以下のコマンドを実行してください：\n"
+        f"`pip install {' '.join(missing_packages)}`"
+    )
