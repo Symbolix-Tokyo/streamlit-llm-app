@@ -1,10 +1,9 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-import os
 import streamlit as st
-
-# LangChain (OpenAI)
+import os
+import sys
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
@@ -49,6 +48,14 @@ with st.sidebar:
         help="環境変数 OPENAI_API_KEY でも可",
     )
     default_key = os.environ.get("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY", "")
+    # api_keyが空の場合のみdefault_keyを代入する
+    if not api_key and default_key:
+        api_key = default_key
+
+    # get_default_api_key関数が未定義なので追加
+    def get_default_api_key():
+        return os.environ.get("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY", "")
+    default_key = get_default_api_key()
     if not api_key and default_key:
         api_key = default_key
 
@@ -100,12 +107,16 @@ st.divider()
 
 # -----------------------------
 # 専門家の選択（ラジオ）
-# -----------------------------
+expert_options = {
+    "手軽な夕飯の専門家": "A",
+    "作り置きの専門家": "B",
+}
 expert_choice = st.radio(
     "LLMの専門家モードを選択してください",
-    options=["A：手軽に作れる夕飯の一品の専門家", "B：作り置きメニューの専門家"],
+    options=list(expert_options.keys()),
     horizontal=True,
 )
+
 
 # -----------------------------
 # 入力フォーム
@@ -168,7 +179,7 @@ def ask_llm(input_text: str, expert: str, model: str, api_key: str) -> str:
     llm = ChatOpenAI(
         model=model,
         temperature=0.6,
-        openai_api_key=api_key,
+        api_key=api_key,
     )
 
     messages = [
@@ -180,21 +191,20 @@ def ask_llm(input_text: str, expert: str, model: str, api_key: str) -> str:
     return resp.content
 
 # -----------------------------
-# 実行
-# -----------------------------
 if run:
     st.divider()
     if not user_text.strip():
         st.error("条件を入力してください。")
     else:
+        expert_key = expert_options.get(expert_choice, "A")
         try:
-            expert_key = "A" if expert_choice.startswith("A") else "B"
             with st.spinner("提案を作成中…"):
                 answer = ask_llm(user_text, expert_key, model_name, api_key)
-            st.subheader("🍽️ 提案結果")
             st.write(answer)
         except Exception as e:
+            import traceback
             st.error(f"エラーが発生しました：{e}")
+            st.expander("開発者向け詳細ログ").code(traceback.format_exc())
 
 # -----------------------------
 # 補助：クイック入力例
@@ -208,3 +218,7 @@ with st.expander("✍️ クイック入力例（コピペ用）"):
         "週のはじめに作り置き2〜3品。野菜たっぷり、電子レンジ活用で。"
         "\n—3〜4日もつレシピと再加熱のポイントを。", language="text"
     )
+
+# langchain-openaiのインストール
+if "langchain-openai" not in sys.modules:
+    st.warning("必要なパッケージがインストールされていません。以下のコマンドを実行してください：\n`pip install langchain-openai`")
