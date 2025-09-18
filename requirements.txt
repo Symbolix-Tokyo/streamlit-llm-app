@@ -32,10 +32,13 @@ rich==13.9.4
 rpds-py==0.27.1
 six==1.17.0
 smmap==5.0.2
-streamlit==1.41.1
+streamlit==1.38.0
 tenacity==9.1.2
 toml==0.10.2
 tornado==6.5.2
 typing_extensions==4.15.0
 tzdata==2025.2
 urllib3==2.5.0
+langchain==0.2.16
+langchain-openai==0.1.23
+openai>=1.42.0
